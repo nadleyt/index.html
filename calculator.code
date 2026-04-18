@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Windows Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f3f3;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    .calc {
+      width: 320px;
+      background: #f9f9f9;
+      border: 1px solid #d0d0d0;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+      overflow: hidden;
+    }
+
+    .calc-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .calc-title span:first-child {
+      font-weight: 600;
+      font-size: 14px;
+      color: #222;
+    }
+
+    .calc-display {
+      background: #fff;
+      padding: 14px 18px 10px;
+      text-align: right;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .calc-expr {
+      font-size: 13px;
+      color: #999;
+      min-height: 20px;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .calc-val {
+      font-size: 38px;
+      font-weight: 300;
+      color: #111;
+      line-height: 1.15;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .calc-buttons {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      background: #f9f9f9;
+    }
+
+    .btn {
+      height: 54px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #fff;
+      color: #111;
+      font-size: 15px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.08s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 400;
+      user-select: none;
+    }
+
+    .btn:hover { background: #f0f0f0; }
+    .btn:active { transform: scale(0.95); background: #e4e4e4; }
+
+    .btn-op {
+      background: #f0f0f0;
+      font-weight: 500;
+      color: #333;
+    }
+    .btn-op:hover { background: #e4e4e4; }
+
+    .btn-func {
+      background: #f0f0f0;
+      font-size: 13px;
+      color: #444;
+    }
+    .btn-func:hover { background: #e4e4e4; }
+
+    .btn-eq {
+      background: #0078d4;
+      color: #fff;
+      border-color: #0078d4;
+      font-weight: 500;
+      font-size: 18px;
+      grid-column: span 4;
+      height: 52px;
+    }
+    .btn-eq:hover { background: #106ebe; }
+    .btn-eq:active { background: #005a9e; }
+
+    .btn-dev {
+      background: #1a6b3c;
+      color: #d1f0e0;
+      border-color: #1a6b3c;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .btn-dev:hover { background: #145830; }
+
+    .btn-app {
+      background: #5b3fa0;
+      color: #e8ddff;
+      border-color: #5b3fa0;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .btn-app:hover { background: #4a3282; }
+
+    /* Modal */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-bg.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border: 1px solid #d0d0d0;
+      border-radius: 12px;
+      width: 290px;
+      padding: 1.5rem;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+
+    .modal h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 1rem;
+    }
+
+    .modal p {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.7;
+      margin-bottom: 4px;
+    }
+
+    .modal p strong {
+      color: #222;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #888;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .modal-close:hover { background: #f0f0f0; color: #333; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    .badge-dev { background: #d1f0e0; color: #0f5c30; }
+    .badge-app { background: #e8ddff; color: #3a2070; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #f0f0f0;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="calc">
+    <div class="calc-title">
+      <span>Calculator</span>
+      <span>Standard</span>
+    </div>
+
+    <div class="calc-display">
+      <div class="calc-expr" id="expr"></div>
+      <div class="calc-val" id="display">0</div>
+    </div>
+
+    <div class="calc-buttons">
+      <button class="btn btn-dev" onclick="showDev()">A</button>
+      <button class="btn btn-app" onclick="showApp()">B</button>
+      <button class="btn btn-func" onclick="calcFunc('percent')">%</button>
+      <button class="btn btn-func" onclick="calcClear('CE')">CE</button>
+
+      <button class="btn btn-func" onclick="calcClear('C')">C</button>
+      <button class="btn btn-func" onclick="calcFunc('back')">&#9003;</button>
+      <button class="btn btn-func" onclick="calcFunc('inv')">1/x</button>
+      <button class="btn btn-func" onclick="calcFunc('sq')">x&sup2;</button>
+
+      <button class="btn btn-func" onclick="calcFunc('sqrt')">&radic;x</button>
+      <button class="btn" onclick="input('7')">7</button>
+      <button class="btn" onclick="input('8')">8</button>
+      <button class="btn" onclick="input('9')">9</button>
+
+      <button class="btn btn-op" onclick="op('/')">&#247;</button>
+      <button class="btn" onclick="input('4')">4</button>
+      <button class="btn" onclick="input('5')">5</button>
+      <button class="btn" onclick="input('6')">6</button>
+
+      <button class="btn btn-op" onclick="op('*')">&#215;</button>
+      <button class="btn" onclick="input('1')">1</button>
+      <button class="btn" onclick="input('2')">2</button>
+      <button class="btn" onclick="input('3')">3</button>
+
+      <button class="btn btn-op" onclick="op('-')">&minus;</button>
+      <button class="btn btn-func" onclick="calcFunc('neg')">+/&minus;</button>
+      <button class="btn" onclick="input('0')">0</button>
+      <button class="btn" onclick="inputDot()">.</button>
+
+      <button class="btn btn-op" onclick="op('+')">+</button>
+      <button class="btn btn-eq" onclick="equals()">=</button>
+    </div>
+  </div>
+
+  <!-- Developer Modal -->
+  <div class="modal-bg" id="modal-dev">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-dev')">&#10005;</button>
+      <h3>Developer Info</h3>
+      <p><strong>Name:</strong> Juan Dela Cruz</p>
+      <p><strong>Role:</strong> Frontend Developer</p>
+      <p><strong>Email:</strong> juan@example.com</p>
+      <p><strong>GitHub:</strong> github.com/juandc</p>
+      <hr class="divider"/>
+      <p style="font-size:13px; color:#888;">Built with passion for clean UI and functional design.</p>
+      <span class="badge badge-dev">Developer</span>
+    </div>
+  </div>
+
+  <!-- App Info Modal -->
+  <div class="modal-bg" id="modal-app">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('modal-app')">&#10005;</button>
+      <h3>About This App</h3>
+      <p><strong>App:</strong> Windows-Style Calculator</p>
+      <p><strong>Version:</strong> 1.0.0</p>
+      <p><strong>Built with:</strong> HTML, CSS &amp; JavaScript</p>
+      <p><strong>Features:</strong> Standard arithmetic, square root, reciprocal, percent, sign toggle and more.</p>
+      <hr class="divider"/>
+      <p style="font-size:13px; color:#888;">A faithful recreation of the Windows 11 Standard Calculator with extra developer and app info buttons.</p>
+      <span class="badge badge-app">v1.0.0</span>
+    </div>
+  </div>
+
+  <script>
+    let cur = '0', prev = null, pendingOp = null, justCalc = false;
+
+    const disp = () => document.getElementById('display');
+    const expr = () => document.getElementById('expr');
+
+    function setDisplay(v) {
+      let s = String(v);
+      if (!isNaN(s) && s.length > 14) s = parseFloat(v).toExponential(8);
+      disp().textContent = s;
+    }
+
+    function input(d) {
+      if (justCalc) { cur = d; justCalc = false; }
+      else if (cur === '0') cur = d;
+      else if (cur.length < 15) cur += d;
+      setDisplay(cur);
+    }
+
+    function inputDot() {
+      if (justCalc) { cur = '0.'; justCalc = false; }
+      else if (!cur.includes('.')) cur += '.';
+      setDisplay(cur);
+    }
+
+    function op(o) {
+      if (pendingOp && !justCalc) compute();
+      prev = parseFloat(cur);
+      pendingOp = o;
+      const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[o];
+      expr().textContent = prev + ' ' + sym;
+      justCalc = true;
+    }
+
+    function compute() {
+      if (pendingOp === null || prev === null) return;
+      let a = prev, b = parseFloat(cur), r;
+      if (pendingOp === '+') r = a + b;
+      else if (pendingOp === '-') r = a - b;
+      else if (pendingOp === '*') r = a * b;
+      else if (pendingOp === '/') r = b === 0 ? 'Cannot divide by zero' : a / b;
+      cur = typeof r === 'number' ? String(parseFloat(r.toFixed(10))) : r;
+      expr().textContent = a + ' ' + { '+': '+', '-': '−', '*': '×', '/': '÷' }[pendingOp] + ' ' + b + ' =';
+      prev = null; pendingOp = null;
+      setDisplay(cur);
+    }
+
+    function equals() { compute(); justCalc = true; }
+
+    function calcClear(t) {
+      if (t === 'C') { cur = '0'; prev = null; pendingOp = null; expr().textContent = ''; }
+      else { cur = '0'; }
+      justCalc = false;
+      setDisplay('0');
+    }
+
+    function calcFunc(f) {
+      let v = parseFloat(cur);
+      if (f === 'back') { cur = cur.length > 1 ? cur.slice(0, -1) : '0'; }
+      else if (f === 'percent') { cur = String(v / 100); }
+      else if (f === 'neg') { cur = String(-v); }
+      else if (f === 'inv') { cur = v === 0 ? 'Cannot divide by zero' : String(1 / v); }
+      else if (f === 'sq') { cur = String(v * v); }
+      else if (f === 'sqrt') { cur = v < 0 ? 'Invalid input' : String(Math.sqrt(v)); }
+      if (!isNaN(cur)) cur = String(parseFloat(parseFloat(cur).toFixed(10)));
+      setDisplay(cur);
+    }
+
+    function showDev() { document.getElementById('modal-dev').classList.add('open'); }
+    function showApp() { document.getElementById('modal-app').classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    document.querySelectorAll('.modal-bg').forEach(m =>
+      m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); })
+    );
+
+    document.addEventListener('keydown', e => {
+      if ('0123456789'.includes(e.key)) input(e.key);
+      else if (e.key === '.') inputDot();
+      else if (['+', '-', '*', '/'].includes(e.key)) op(e.key);
+      else if (e.key === 'Enter' || e.key === '=') equals();
+      else if (e.key === 'Backspace') calcFunc('back');
+      else if (e.key === 'Escape') calcClear('C');
+    });
+  </script>
+</body>
+</html>
